@@ -1,10 +1,6 @@
+import http.server
 import socketserver
 import socket
-import struct
-import time
-import platform
-import random
-import uuid
 
 # Multicast IP, multicast port
 SSDP_ADDR = "239.255.255.250"
@@ -34,7 +30,7 @@ SSDP_REPLY = 'HTTP/1.1 200 OK\r\n' + \
                'USN: {}\r\n' + '\r\n'
 
 
-class SSDPHandler(socketserver.BaseRequestHandler):
+class SSDPHandler(BaseHTTPRequestHandler):
 
      # Reads data from the socket checks for the correct
      # search parameters and UPnP search target, and replies
@@ -59,25 +55,14 @@ class SSDPHandler(socketserver.BaseRequestHandler):
                if dial_search:
                     self.sendto(SSDP_REPLY, self.client_address)
 
-class SSDPServer(socketserver.UDPServer):
+def main():
+     socketserver.UDPServer.allow_reuse_address = True
+     server = socketserver.UDPServer(('', 0), SSDPHandler)
+     server.socket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_pton(socket.AF_INET, SSDP_ADDR) +
+                      socket.inet_pton(socket.AF_INET, '0.0.0.0'))
+     server.serve_forever()
 
-     def __init__(self, device_url, host=''):
-          socketserver.UDPServer.__init__(self, (host, SSDP_PORT), 
-                    SSDPHandler, False)
-          self.allow_reuse_address = True
-          self.server_bind()
-          mreq = struct.pack("=4sl", socket.inet_aton(SSDP_ADDR),
-                                       socket.INADDR_ANY)
-          self.socket.setsockopt(socket.IPPROTO_IP, 
-                    socket.IP_ADD_MEMBERSHIP, mreq)
-
-     def start(self):
-          self.serve_forever()
-
-class DialServer(object):
-     def __init__(self):
-          pass
-
-     def add_app(self, app_id, app_path):
-          pass
+if __name__ == '__main__':
+  main()
+     
     
